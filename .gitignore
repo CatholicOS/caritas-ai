@@ -1,0 +1,49 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+venv/
+*.log
+*.sqlite3
+
+# === VS Code ===
+.vscode/
+.history/
+
+# === OS files ===
+.DS_Store
+Thumbs.db
+
+# === Docker ===
+*.pid
+*.tar
+*.bak
+
+# === Jupyter / Experiments ===
+.ipynb_checkpoints/
+*.ipynb
+
+# === Environment ===
+.env
+.env.*
+!.env.example
+
+# === Test and coverage ===
+.coverage
+htmlcov/
+.pytest_cache/
+
+# === Node / Streamlit  ===
+node_modules/
+streamlit/
+
+# === IDEs ===
+.idea/
+*.swp
