@@ -75,6 +75,7 @@ API docs: http://127.0.0.1:8000/docs
 docker compose up --build
 ```
 API → http://localhost:8000
+
 Adminer (DB UI) → http://localhost:8080
 
 ---
