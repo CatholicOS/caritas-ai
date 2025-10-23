@@ -36,11 +36,10 @@ CaritasAI uses a modular, service-oriented architecture:
 |--------|---------------|
 | **Frontend** | React |
 | **Backend API** | FastAPI |
-| **AI / Reasoning** | LangChain, OpenAI GPT-4 / Claude / Mixtral |
+| **AI / Reasoning** | LangChain, OpenAI GPT-4  |
 | **Database** | PostgreSQL + PostGIS |
 | **Integrations** | Twilio (SMS), Google Maps API, Airtable |
 | **Deployment** | Docker, AWS EC2  |
-| **Dev Tools** | VS Code, pytest, loguru |
 
 ---
 
