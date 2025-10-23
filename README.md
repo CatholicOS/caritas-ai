@@ -24,6 +24,7 @@ It enables parishes, dioceses, and volunteers to coordinate charitable activitie
 
 ## 🧠 System Architecture
 CaritasAI uses a modular, service-oriented architecture:
+
 🖼️ See: [`docs/architecture_diagram.png`](docs/architecture_diagram.png)  
 📘 Full design: [`docs/system_design.md`](docs/system_design.md)
 
