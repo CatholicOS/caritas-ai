@@ -9,7 +9,7 @@ This module will contain the web application interface for CaritasAI.
 - 🌐 Responsive, mobile-first UI for accessibility
 
 ## Tech Stack
-- React (Vite)
+- React 
 - Tailwind CSS
-- Axios (for FastAPI integration)
-- Leaflet / Mapbox (for geospatial visualization)
+- Axios - FastAPI integration
+- Leaflet / Mapbox - for geospatial visualization
