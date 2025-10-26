@@ -1,16 +1,92 @@
+# CaritasAI Docker Compose Configuration
+
 services:
-  api:
-    build: ./backend
-    ports: ["8000:8000"]
-    env_file: ./.env
-    depends_on: [db]
+  # PostgreSQL Database with PostGIS
   db:
-    image: postgis/postgis:16-3.4
+    image: postgis/postgis:15-3.3
+    container_name: caritasai-db
     environment:
-      POSTGRES_USER: caritasai
-      POSTGRES_PASSWORD: caritasai
       POSTGRES_DB: caritasai
-    ports: ["5432:5432"]
+      POSTGRES_USER: caritasai
+      POSTGRES_PASSWORD: caritasai123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caritasai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - caritasai-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: caritasai-backend
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=postgresql://caritasai:caritasai123@db:5432/caritasai
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://caritasai:caritasai123@db:5432/caritasai
+      - ENVIRONMENT=development
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+      echo '⏳ Waiting for database...' &&
+      sleep 5 &&
+      echo '🔄 Running database migrations...' &&
+      alembic upgrade head &&
+      echo '🌱 Seeding database...' &&
+      python -m app.utils.seed_data &&
+      echo '🚀 Starting API...' &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    networks:
+      - caritasai-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: caritasai-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    networks:
+      - caritasai-network
+
+  # Adminer - Database Management UI
   adminer:
     image: adminer
-    ports: ["8080:8080"]
+    container_name: caritasai-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    networks:
+      - caritasai-network
+
+volumes:
+  postgres_data:
+
+networks:
+  caritasai-network:
+    driver: bridge
