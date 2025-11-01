@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Heart, Search, BarChart3, Home } from 'lucide-react';
-import VolunteerChat from './components/VolunteerChat';
+import VolunteerPage from './components/VolunteerPage';
 import ParishFinder from './components/ParishFinder';
 import AdminDashboard from './components/AdminDashboard';
 import HomePage from './components/HomePage';
@@ -57,7 +58,7 @@ function App() {
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/volunteer" element={<VolunteerChat />} />
+            <Route path="/volunteer" element={<VolunteerPage />} />
             <Route path="/find-help" element={<ParishFinder />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
