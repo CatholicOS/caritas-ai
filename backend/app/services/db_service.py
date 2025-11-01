@@ -17,6 +17,7 @@ from app.models.registration import Registration
 
 logger = logging.getLogger(__name__)
 
+from app.services.email_service import send_registration_confirmation, send_parish_notification
 
 def get_nearby_parishes(
     city: str = None,
@@ -122,10 +123,16 @@ def search_volunteer_events(
             # Add parish info
             event_dict["parish_name"] = event.parish.name
             event_dict["parish_city"] = event.parish.city
+            event_dict["parish_state"] = event.parish.state 
             event_dict["parish_address"] = event.parish.address
+            # Add for backward compatibility
+            event_dict["city"] = event.parish.city
+            event_dict["state"] = event.parish.state  
+            event_dict["address"] = event.parish.address
             result.append(event_dict)
         
         return result
+
         
     except Exception as e:
         logger.error(f"Error searching events: {e}")
@@ -229,6 +236,34 @@ def register_volunteer_for_event(
         # Get parish info for response
         parish = event.parish
         
+        # SEND EMAIL WITH CALENDAR INVITE
+        try:
+            email_result = send_registration_confirmation(
+                volunteer_name=f"{volunteer.first_name} {volunteer.last_name}",
+                volunteer_email=volunteer.email,
+                event_title=event.title,
+                event_date=event.event_date,
+                event_description=event.description,
+                parish_name=parish.name,
+                parish_email=parish.email or "volunteer@caritasai.org",
+                parish_address=f"{parish.address}, {parish.city}, {parish.state} {parish.zip_code}",
+                event_id=event.id
+            )
+            
+            # NOTIFY PARISH
+            if parish.email:
+                send_parish_notification(
+                    parish_name=parish.name,
+                    parish_email=parish.email,
+                    volunteer_name=f"{volunteer.first_name} {volunteer.last_name}",
+                    volunteer_email=volunteer.email,
+                    event_title=event.title,
+                    event_date=event.event_date
+                )
+        except Exception as e:
+            logger.error(f"Email sending failed: {e}")
+            email_result = {"success": False, "message": str(e)}
+        
         return {
             "success": True,
             "registration_id": registration.id,
@@ -237,8 +272,10 @@ def register_volunteer_for_event(
             "event_date": event.event_date.isoformat(),
             "parish_name": parish.name,
             "coordinator": "Parish Coordinator",
-            "coordinator_email": parish.email or "contact@parish.org"
+            "coordinator_email": parish.email or "contact@parish.org",
+            "email_sent": email_result.get("success", False)
         }
+
         
     except Exception as e:
         db_session.rollback()
@@ -334,3 +371,112 @@ def get_parish_analytics(
     finally:
         if db is None:
             db_session.close()
+            
+            
+            
+from sqlalchemy.orm import Session
+from sqlalchemy import func, text
+from app.core.database import get_db
+from app.models.parish import Parish
+from app.models.event import Event
+from typing import List, Dict
+
+def get_parishes_by_location(city: str = None, state: str = None, limit: int = 10) -> List[Dict]:
+    """Get parishes by location"""
+    db = next(get_db())
+    try:
+        query = db.query(Parish).filter(Parish.is_active == True)
+        
+        if city:
+            query = query.filter(Parish.city.ilike(f"%{city}%"))
+        if state:
+            query = query.filter(Parish.state.ilike(f"%{state}%"))
+        
+        parishes = query.limit(limit).all()
+        
+        return [
+            {
+                "id": p.id,
+                "name": p.name,
+                "lat": float(p.latitude) if p.latitude else 40.7128,
+                "lng": float(p.longitude) if p.longitude else -74.0060,
+                "type": "parish",
+                "address": f"{p.address}, {p.city}, {p.state} {p.zip_code}",
+                "description": f"Services: {', '.join(p.services[:3])}" if p.services else "Catholic Parish"
+            }
+            for p in parishes
+        ]
+    finally:
+        db.close()
+
+def get_events_by_location(city: str = None, state: str = None, limit: int = 10) -> List[Dict]:
+    """Get events by location through their parishes"""
+    db = next(get_db())
+    try:
+        query = db.query(Event).join(Parish).filter(
+            Event.is_active == True,
+            Event.status == 'open'
+        )
+        
+        if city:
+            query = query.filter(Parish.city.ilike(f"%{city}%"))
+        if state:
+            query = query.filter(Parish.state.ilike(f"%{state}%"))
+        
+        events = query.limit(limit).all()
+        
+        return [
+            {
+                "id": e.id,
+                "name": e.title,
+                "lat": float(e.parish.latitude) if e.parish.latitude else 40.7128,
+                "lng": float(e.parish.longitude) if e.parish.longitude else -74.0060,
+                "type": "event",
+                "address": f"{e.parish.name}, {e.parish.city}, {e.parish.state}",
+                "description": f"{e.description[:100]}..." if e.description else e.title
+            }
+            for e in events if e.parish
+        ]
+    finally:
+        db.close()
+
+def extract_location_from_message(message: str) -> Dict[str, str]:
+    """Extract city/state from message"""
+    message_lower = message.lower()
+    
+    # Common cities
+    cities = {
+        "brooklyn": "Brooklyn",
+        "manhattan": "Manhattan",
+        "queens": "Queens",
+        "bronx": "Bronx",
+        "baltimore": "Baltimore",
+        "washington": "Washington",
+        "philadelphia": "Philadelphia",
+        "new york": "New York"
+    }
+    
+    # Common states
+    states = {
+        "ny": "NY",
+        "new york": "NY",
+        "md": "MD",
+        "maryland": "MD",
+        "pa": "PA",
+        "pennsylvania": "PA",
+        "dc": "DC"
+    }
+    
+    result = {"city": None, "state": None}
+    
+    for key, value in cities.items():
+        if key in message_lower:
+            result["city"] = value
+            break
+    
+    for key, value in states.items():
+        if key in message_lower:
+            result["state"] = value
+            break
+    
+    return result
