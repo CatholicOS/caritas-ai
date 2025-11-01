@@ -1,6 +1,7 @@
 # CaritasAI Docker Compose Configuration
 
 services:
+
   # PostgreSQL Database with PostGIS
   db:
     image: postgis/postgis:15-3.3
@@ -35,6 +36,10 @@ services:
       - ENVIRONMENT=development
       - API_HOST=0.0.0.0
       - API_PORT=8000
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USERNAME=your_email_address
+      - SMTP_PASSWORD=your_email_password
     volumes:
       - ./backend:/app
     ports:

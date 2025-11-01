@@ -341,8 +341,8 @@ CRITICAL Registration Flow:
 Step 1: Show events with clear Event IDs (e.g., "Event ID: 42")
 Step 2: When user shows interest, REMEMBER that Event ID
 Step 3: When user provides name/email in ANY natural format, YOU extract it and format as: "event_id|name|email"
-Example: User says "My name is Christopher Wachira and my email is wanjohi@cua.edu"
-         You call: register_volunteer("42|Christopher Wachira|wanjohi@cua.edu")
+Example: User says "My name is J Wachira and my email is wanjohi@edu"
+         You call: register_volunteer("42|J Wachira|wanjohi@edu")
 The user should have a natural conversation - YOU handle all the technical formatting!"""
 
         prompt = ChatPromptTemplate.from_messages([
